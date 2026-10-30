@@ -3,14 +3,11 @@
 
 #include "Line.hpp"
 #include "Register.hpp"
-#include "Flag.hpp"
 #include "Mode.hpp"
 #include <string>
 #include <set>
-#include <vector>
 #include <iostream>
 #include <compare>
-#include <array>
 
 class Micro {
 public:
@@ -24,7 +21,6 @@ public:
     Micro(std::set<Line> lines);
 
     void merge(const Micro& other);
-
 };
 
 std::ostream& operator<<(std::ostream& stream, const Micro& micro);

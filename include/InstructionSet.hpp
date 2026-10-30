@@ -9,7 +9,6 @@
 #include <map>
 #include <vector>
 #include <string>
-#include <cstdint>
 #include <optional>
 #include <span>
 #include <memory>
@@ -17,6 +16,7 @@
 class InstructionSet {
 private:
     static std::unique_ptr<InstructionSet> singleInstance;
+
 
     std::vector<MicroSequence> instructions{};
     std::map<Instruction, std::size_t> instructionReferences{};
@@ -81,10 +81,16 @@ private:
 public:
     static const InstructionSet& instance();
 
-    std::optional<const MicroSequence*> getInstruction(const Instruction& ins) const;
+    const MicroSequence* getInstruction(const Instruction& ins) const;
     std::optional<std::size_t> getOpcode(const Instruction& ins) const;
 
     std::span<const MicroSequence> getInstructions() const;
+
+    std::size_t noOpOpcode;
+    std::size_t interuptOpcode;
+    std::size_t haltOpcode;
+    std::size_t debugPrintOpcode;
+    std::size_t rtiOpcode;
 
     InstructionSet();
 };

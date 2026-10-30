@@ -1,7 +1,6 @@
 #ifndef REGISTER_HPP
 #define REGISTER_HPP
 
-#include <string>
 #include <iostream>
 
 enum class RID {
@@ -24,6 +23,8 @@ enum class RID {
     Kbd,
     Ins,
     CD,
+    AC,
+    AD,
     Prog,
     None,
 };

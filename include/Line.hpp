@@ -1,7 +1,6 @@
 #ifndef LINE_HPP
 #define LINE_HPP
 
-#include <string>
 #include <iostream>
 
 enum class Line {

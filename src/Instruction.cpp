@@ -46,17 +46,20 @@ std::ostream& operator<<(std::ostream& stream, const Micro& micro) {
 Instruction::Instruction(std::string name, AddressingMode mode)
     :   name{name}, mode{mode} {}
 
-Instruction::Instruction() : name{}, mode{} {}
+Instruction::Instruction() : name{}, mode{{}} {}
 
 int Instruction::getSize() const {
-    return 1
-        + ::getSize(this->mode.source.size)
-        + ::getSize(this->mode.destination.size);
+    int size = 1;
+    for (const SizedAddress& address : this->mode.mode) {
+        size += ::getSize(address.size);
+
+    }
+    return size;
 }
 
 std::ostream& Instruction::print(std::ostream& stream, std::uint16_t argument) const {
     stream << this->name;
-    if (!this->mode.destination.isImplied()) {
+    if (!this->mode.isImplied()) {
         stream << ' ';
     }
     this->mode.print(stream, argument);
@@ -65,7 +68,7 @@ std::ostream& Instruction::print(std::ostream& stream, std::uint16_t argument) c
 
 std::ostream& Instruction::print(std::ostream& stream, const std::string& argument) const {
     stream << this->name;
-    if (!this->mode.destination.isImplied()) {
+    if (!this->mode.isImplied()) {
         stream << ' ';
     }
     this->mode.print(stream, argument);
@@ -74,7 +77,7 @@ std::ostream& Instruction::print(std::ostream& stream, const std::string& argume
 
 std::ostream& operator<<(std::ostream& stream, const Instruction& instruction) {
     stream << instruction.name;
-    if (!instruction.mode.destination.isImplied()) {
+    if (!instruction.mode.isImplied()) {
         stream << ' ';
     }
     return stream << instruction.mode;

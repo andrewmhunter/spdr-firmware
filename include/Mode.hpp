@@ -4,9 +4,9 @@
 #include "Register.hpp"
 #include <iostream>
 #include <cstdint>
+#include <vector>
 
 enum class Mode {
-    Implied,
     Register,
     Direct,
     Immediate,
@@ -47,7 +47,7 @@ public:
     Address(Mode mode);
     Address(RID reg);
     Address(Mode mode, RID reg);
-    Address();
+    Address() = default;
 
     std::ostream& print(std::ostream& stream, const std::string& argument) const;
 };
@@ -64,14 +64,11 @@ public:
     Address address;
     Size size;
 
-    SizedAddress();
     SizedAddress(Mode mode);
     SizedAddress(RID reg);
     SizedAddress(Mode mode, RID reg);
     SizedAddress(Address address);
     SizedAddress(Address address, Size size);
-
-    bool isImplied() const;
 
     bool operator==(const SizedAddress& other) const = default;
     auto operator<=>(const SizedAddress& other) const = default;
@@ -85,12 +82,15 @@ std::ostream& operator<<(std::ostream& stream, const SizedAddress& sizedAddress)
 class AddressingMode {
 private:
 public:
-    SizedAddress destination;
-    SizedAddress source;
+    std::vector<SizedAddress> mode;
 
-    AddressingMode();
-    AddressingMode(SizedAddress destination, SizedAddress source);
-    AddressingMode(SizedAddress destination);
+    explicit AddressingMode(std::vector<SizedAddress> mode);
+    AddressingMode(std::initializer_list<SizedAddress> mode);
+
+    bool isImplied() const;
+
+    SizedAddress getDestination();
+    SizedAddress getSource();
 
     std::ostream& print(std::ostream& stream, std::uint16_t argument) const;
     std::ostream& print(std::ostream& stream, const std::string& argument) const;

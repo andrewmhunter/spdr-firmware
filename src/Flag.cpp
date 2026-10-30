@@ -1,7 +1,7 @@
 #include "Flag.hpp"
 #include <stdexcept>
+#include <map>
 #include <string>
-#include <tuple>
 
 const std::map<Flag, Flag> flagPairs {
     {Flag::C, Flag::NC},
@@ -95,7 +95,7 @@ FlagSet FlagSet::never() {
     return FlagSet{false};
 }
 
-/*FlagSet::FlagSet(std::uint16_t value) : flags{}, noMatchOnEmpty{false} {
+FlagSet::FlagSet(std::uint16_t value) : flags{}, noMatchOnEmpty{false} {
     for (auto& flag : {
         std::pair{0b100, Flag::Z},
         std::pair{0b1000, Flag::C},
@@ -107,7 +107,7 @@ FlagSet FlagSet::never() {
             this->flags.insert(invertFlag(flag.second));
         }
     }
-}*/
+}
 
 FlagSet FlagSet::invert() {
     FlagSet flags{};

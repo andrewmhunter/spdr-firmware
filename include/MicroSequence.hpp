@@ -5,8 +5,8 @@
 #include "Register.hpp"
 #include "Line.hpp"
 #include "Instruction.hpp"
-#include <cstdint>
-#include <optional>
+#include <vector>
+#include <map>
 
 class MicroSequence {
 private:
@@ -15,7 +15,7 @@ public:
     std::map<FlagSet, std::vector<Micro>> micros{};
 
     Instruction instruction;
-    std::size_t opcode;
+    std::size_t opcode = -1;
 
     MicroSequence();
 

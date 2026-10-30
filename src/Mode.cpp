@@ -1,6 +1,7 @@
 #include "Mode.hpp"
 #include <map>
 #include <format>
+#include <stdexcept>
 
 int getSize(Size size) {
     switch (size) {
@@ -12,6 +13,7 @@ int getSize(Size size) {
         case Size::Word:
             return 2;
     }
+    throw std::invalid_argument{"Size invalid"};
 }
 
 std::ostream& operator<<(std::ostream& stream, Size size) {
@@ -37,7 +39,7 @@ ModeData::ModeData(int dataSize, bool usesRegister, bool isDirect, Size defaultS
 
 const ModeData& ModeData::get(Mode mode) {
     static std::map<Mode, ModeData> modeDatas {
-        {Mode::Implied, {0, false, false, Size::Unsized}},
+//        {Mode::Implied, {0, false, false, Size::Unsized}},
         {Mode::Register, {0, true, false, Size::Unsized}},
         {Mode::Direct, {2, false, true, Size::Word}},
         {Mode::Immediate, {1, false, false, Size::Byte}},
@@ -64,12 +66,10 @@ Address::Address(Mode mode, RID reg) : mode{mode}, reg{reg} {
     }
 }
 
-Address::Address() : Address{Mode::Implied} {}
+//Address::Address() : Address{Mode::Implied} {}
 
 std::ostream& Address::print(std::ostream& stream, const std::string& argument) const {
     switch (this->mode) {
-        case Mode::Implied:
-            break;
         case Mode::Register:
             stream << this->reg;
             break;
@@ -93,9 +93,6 @@ std::ostream& Address::print(std::ostream& stream, const std::string& argument) 
 std::ostream& operator<<(std::ostream& stream, const Address& address) {
     ModeData modeData = ModeData::get(address.mode);
     return address.print(stream, (modeData.dataSize == 2) ? "addr" : "imm");
-
-    if (address.mode == Mode::Implied)
-        return stream;
 
     if (modeData.isDirect) {
         stream << "[";
@@ -139,8 +136,6 @@ bool operator==(const Address& address0, const Address& address1) {
     return address0.mode == address1.mode && address0.reg == address1.reg;
 }
 
-SizedAddress::SizedAddress()
-    : SizedAddress{Address{}} {}
 
 SizedAddress::SizedAddress(Mode mode)
     : SizedAddress{Address{mode}} {}
@@ -156,13 +151,6 @@ SizedAddress::SizedAddress(Address address)
 
 SizedAddress::SizedAddress(Address address, Size size)
 : address{address}, size{size} {
-    /*Size defaultSize = ModeData::get(address.mode).defaultSize;
-    if ((defaultSize == Size::Unsized && size != Size::Unsized)
-            || (defaultSize != Size::Unsized && size == Size::Unsized)
-        ) {
-        // TODO: Error stuff.
-        throw std::runtime_error{"bad sizing"};
-    }*/
 }
 
 std::ostream& SizedAddress::print(std::ostream& stream, std::uint16_t argument) const {
@@ -192,66 +180,64 @@ std::ostream& operator<<(
     return stream << sizedAddress.address << " (" << sizedAddress.size << ")";
 }
 
-bool SizedAddress::isImplied() const {
-    return this->address.mode == Mode::Implied;
+
+AddressingMode::AddressingMode(std::vector<SizedAddress> mode): mode{mode} {
+
 }
 
-AddressingMode::AddressingMode(SizedAddress destination, SizedAddress source)
-    :   destination{destination},
-        source{source} {
-    if (destination.address.mode == Mode::Implied 
-            && source.address.mode != Mode::Implied
-        ) {
-        throw; // TODO: Error stuff.
-    }
+AddressingMode::AddressingMode(std::initializer_list<SizedAddress> mode)
+    : mode{mode} {
 }
 
-AddressingMode::AddressingMode()
-    :   AddressingMode{{Mode::Implied}, {Mode::Implied}} {}
-
-AddressingMode::AddressingMode(SizedAddress destination) 
-    :   AddressingMode{destination, {Mode::Implied}} {}
-
+bool AddressingMode::isImplied() const {
+    return this->mode.size() <= 0;
+}
 
 std::ostream& AddressingMode::print(std::ostream& stream, std::uint16_t argument) const {
-    this->destination.print(stream, argument);
-    if (!this->source.isImplied()) {
-        stream << ", ";
-        this->source.print(stream, argument);
+    bool first = true;
+    for (const SizedAddress& address : this->mode) {
+        if (!first) {
+            stream << ", ";
+        }
+        address.print(stream, argument);
+        first = false;
     }
     return stream;
 }
 
 std::ostream& AddressingMode::print(std::ostream& stream, const std::string& argument) const {
-    this->destination.address.print(stream, argument);
-    if (!this->source.isImplied()) {
-        stream << ", ";
-        this->source.address.print(stream, argument);
+    bool first = true;
+    for (const SizedAddress& address : this->mode) {
+        if (!first) {
+            stream << ", ";
+        }
+        address.print(stream, argument);
+        first = false;
     }
     return stream;
 }
 
 
 std::ostream& operator<<(std::ostream& stream, const AddressingMode& mode) {
-    stream << mode.destination.address;
-    if (!mode.source.isImplied()) {
-        stream << ", " << mode.source.address;
+    bool first = true;
+    for (const SizedAddress& address : mode.mode) {
+        if (!first) {
+            stream << ", ";
+        }
+        stream << address;
+        first = false;
     }
     return stream;
 }
 
 bool operator==(const AddressingMode& mode0, const AddressingMode& mode1) {
-    return mode0.destination == mode1.destination
-        && mode0.source == mode1.source
-        && mode0.destination == mode1.destination;
+    return mode0.mode == mode1.mode;
 }
 
 std::strong_ordering operator<=>(
     const AddressingMode& mode0,
     const AddressingMode& mode1
 ) {
-    if (mode0.destination == mode1.destination)
-        return mode0.source <=> mode1.source;
-    return mode0.destination <=> mode1.destination;
+    return mode0.mode <=> mode1.mode;
 }
 

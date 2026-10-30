@@ -24,6 +24,8 @@ std::ostream& operator<<(std::ostream& stream, RID reg) {
         {RID::Kbd, "kbd"},
         {RID::Ins, "ir"},
         {RID::CD, "cd"},
+        {RID::AC, "ac"},
+        {RID::AD, "ad"},
         {RID::Prog, "prog"},
         {RID::None, "none"},
     };

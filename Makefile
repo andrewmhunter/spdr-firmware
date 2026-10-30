@@ -5,8 +5,11 @@ SRCS := src/Flag.cpp src/Instruction.cpp src/Register.cpp src/Line.cpp \
 	src/instructions.cpp
 
 BUILD_DIR := build
+INCLUDE_DIR := $(HOME)/.local/include/SpdrFirmware
 OBJECTS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJECTS:.o=.d)
+
+# CXX := clang++
 
 CXXFLAGS := -std=c++20 -g -Iinclude -c -MMD -MP -Wall -pedantic
 
@@ -25,7 +28,8 @@ clean:
 
 .PHONY: install
 install:
-	cp -r include/. $(HOME)/.local/include/SpdrFirmware
+	mkdir -p $(INCLUDE_DIR)
+	cp -r include/. $(INCLUDE_DIR)
 	cp -r $(BUILD_DIR)/$(TARGET) $(HOME)/.local/lib/$(TARGET)
 
 -include $(DEPS)

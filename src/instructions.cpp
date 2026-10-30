@@ -1,13 +1,17 @@
 #include "InstructionSet.hpp"
 #include "Mode.hpp"
+#include <iostream>
+#include <iomanip>
 
 InstructionSet::InstructionSet() {
-    instruction("nop", {});
+    noOpOpcode = instruction("nop", {})
+        .opcode;
 
-    instruction("hlt", {})
-        .add({Line::halt});
+    haltOpcode = instruction("hlt", {})
+        .add({Line::halt})
+        .opcode;
 
-    interupt()
+    interuptOpcode = interupt()
         .addPushStart()
         .addPush(RID::PcL)
         .addPush(RID::PcH)
@@ -16,7 +20,8 @@ InstructionSet::InstructionSet() {
         .add(RID::Alu, RID::Temp, {Line::zero})
         .add(RID::Alu, RID::PcH, {Line::inc})
         .add({Line::nop})
-        .add({Line::clear_irq});
+        .add({Line::clear_irq})
+        .opcode;
 
     instructionLoads(RID::A);
     instruction("mov", {{RID::A}, {Mode::Indirect, RID::CD}})
@@ -180,11 +185,12 @@ InstructionSet::InstructionSet() {
         .add({Line::counter_enable})
         .add({Line::counter_enable});
 
-    instruction("rti", {})
+    rtiOpcode = instruction("rti", {})
         .addPopStart()
         .addPop(RID::F)
         .addPop(RID::PcH)
-        .addPopEnd(RID::PcL);
+        .addPopEnd(RID::PcL)
+        .opcode;
 
     instruction("out", {{RID::A}})
         .add(RID::A, RID::Out);
@@ -206,15 +212,158 @@ InstructionSet::InstructionSet() {
         .add(RID::Prog, RID::None)
         .add(RID::Prog, RID::None)
         .add(RID::Prog, RID::None)
+        .add(RID::Prog, RID::None)
+        .add(RID::Prog, RID::None)
+        .add(RID::Prog, RID::None)
+        .add(RID::Prog, RID::None)
         .add(RID::Prog, RID::A);
 
-    /*for (int i = 0; i < instructions.size(); ++i) {
-        auto ins = instructions[i];
-        std::cout << std::hex << std::setw(2) << std::setfill('0') << i << " " << ins.instruction;
-        //for (auto j : ins.micros[Flag::NC | Flag::NZ | Flag::NS]) {
-        //    std::cout << j << ", ";
-        //}
-        std::cout << '\n';
-    }*/
+
+    // New instructions
+
+    instructionStores(RID::F);
+
+    instruction("clr", {{RID::A}})
+        .add(RID::Alu, RID::A, {Line::zero});
+
+    instruction("clr", {{RID::C}})
+        .add(RID::Alu, RID::C, {Line::zero});
+
+    instruction("clr", {{RID::D}})
+        .add(RID::Alu, RID::D, {Line::zero});
+    
+    instruction("flip", {{RID::A}})
+        .add(RID::A, RID::Temp)
+        .add(RID::Alu, RID::A, {Line::passthrough, Line::flip});
+    
+    instruction("mov", {{RID::AD}, {Mode::ImmediateAddress}})
+        .addLoadImm(RID::A)
+        .addLoadImm(RID::D);
+    
+    instruction("mov", {{RID::CD}, {Mode::ImmediateAddress}})
+        .addLoadImm(RID::C)
+        .addLoadImm(RID::D);
+    
+    // Instructions for FORTH
+
+    instruction("mov", {{RID::D}, {Mode::Offset, RID::C}})
+        .addLoadImm(RID::MarH)
+        .add(RID::C, RID::MarL)
+        .add(RID::Mem, RID::D);
+
+    instruction("mov", {{Mode::Offset, RID::C}, {RID::D}})
+        .addLoadImm(RID::MarH)
+        .add(RID::C, RID::MarL)
+        .add(RID::D, RID::Mem);
+    
+    instruction("xch", {{RID::A}, {Mode::Offset, RID::C}})
+        .addLoadImm(RID::MarH)
+        .add(RID::C, RID::MarL)
+        .add(RID::A, RID::Temp)
+        .add(RID::Mem, RID::A)
+        .add(RID::Temp, RID::Mem);
+    
+    instruction("xch", {{RID::D}, {Mode::Offset, RID::C}})
+        .addLoadImm(RID::MarH)
+        .add(RID::C, RID::MarL)
+        .add(RID::D, RID::Temp)
+        .add(RID::Mem, RID::D)
+        .add(RID::Temp, RID::Mem);
+    
+    instruction("mov", {{RID::A}, {Mode::Indirect, RID::C}})
+        .add(RID::Alu, RID::Temp, {Line::minus_one})
+        .add(RID::Alu, RID::MarH, {Line::dec})
+        .add(RID::C, RID::MarL)
+        .add(RID::Mem, RID::A);
+
+    instruction("mov", {{Mode::Indirect, RID::C}, {RID::A}})
+        .add(RID::Alu, RID::Temp, {Line::minus_one})
+        .add(RID::Alu, RID::MarH, {Line::dec})
+        .add(RID::C, RID::MarL)
+        .add(RID::A, RID::Mem);
+    
+    instruction("mov", {{RID::D}, {Mode::Indirect, RID::C}})
+        .add(RID::Alu, RID::Temp, {Line::minus_one})
+        .add(RID::Alu, RID::MarH, {Line::dec})
+        .add(RID::C, RID::MarL)
+        .add(RID::Mem, RID::D);
+    
+    instruction("mov", {{Mode::Indirect, RID::C}, {RID::D}})
+        .add(RID::Alu, RID::Temp, {Line::minus_one})
+        .add(RID::Alu, RID::MarH, {Line::dec})
+        .add(RID::C, RID::MarL)
+        .add(RID::D, RID::Mem);
+    
+    instruction("fpush", {{RID::A}})
+        .add(RID::C, RID::Temp)
+        .add(RID::Alu, RID::C, {Line::dec})
+        .add(RID::Alu, RID::Temp, {Line::minus_one})
+        .add(RID::Alu, RID::MarH, {Line::dec})
+        .add(RID::C, RID::MarL)
+        .add(RID::A, RID::Mem);
+    
+    instruction("fpush", {{RID::D}})
+        .add(RID::C, RID::Temp)
+        .add(RID::Alu, RID::C, {Line::dec})
+        .add(RID::Alu, RID::Temp, {Line::minus_one})
+        .add(RID::Alu, RID::MarH, {Line::dec})
+        .add(RID::C, RID::MarL)
+        .add(RID::D, RID::Mem);
+    
+    instruction("fpop", {{RID::A}})
+        .add(RID::Alu, RID::Temp, {Line::minus_one})
+        .add(RID::Alu, RID::MarH, {Line::dec})
+        .add(RID::C, RID::MarL)
+        .add(RID::Mem, RID::A)
+        .add(RID::C, RID::Temp)
+        .add(RID::Alu, RID::C, {Line::inc});
+
+    instruction("fpop", {{RID::D}})
+        .add(RID::Alu, RID::Temp, {Line::minus_one})
+        .add(RID::Alu, RID::MarH, {Line::dec})
+        .add(RID::C, RID::MarL)
+        .add(RID::Mem, RID::D)
+        .add(RID::C, RID::Temp)
+        .add(RID::Alu, RID::C, {Line::inc});
+
+
+    instruction("fpush", {{RID::AD}})
+        .add(RID::Alu, RID::Temp, {Line::minus_one})
+        .add(RID::Alu, RID::MarH, {Line::dec})
+        .add(RID::C, RID::Temp)
+        .add(RID::Alu, RID::Temp, {Line::dec})
+        .add(RID::Temp, RID::MarL)
+        .add(RID::D, RID::Mem)
+        .add(RID::Alu, RID::C, {Line::dec})
+        .add(RID::C, RID::MarL)
+        .add(RID::A, RID::Mem);
+
+    instruction("fpop", {{RID::AD}})
+        .add(RID::Alu, RID::Temp, {Line::minus_one})
+        .add(RID::Alu, RID::MarH, {Line::dec})
+        .add(RID::C, RID::MarL)
+        .add(RID::Mem, RID::A)
+        .add(RID::C, RID::Temp)
+        .add(RID::Alu, RID::Temp, {Line::inc})
+        .add(RID::Temp, RID::MarL)
+        .add(RID::Mem, RID::D)
+        .add(RID::Alu, RID::C, {Line::inc});
+    
+    instruction("jsr", {{Mode::ImmediateAddress}})
+        .addPushStart()
+        .addPush(RID::PcH)
+        .addPushEnd(RID::PcL)
+        .addLoadImm(RID::Temp)
+        .addLoadImm(RID::PcH)
+        .add(RID::Temp, RID::PcL);
+
+
+
+    debugPrintOpcode = instruction("dbg_print", {{Mode::Direct}})
+        .addLoadImm(RID::Temp)
+        .addLoadImm(RID::Temp)
+        .opcode;
+    
+
 }
 

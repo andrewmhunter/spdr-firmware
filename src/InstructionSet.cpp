@@ -1,7 +1,5 @@
 #include "InstructionSet.hpp"
 #include "Mode.hpp"
-#include <iomanip>
-#include <stdexcept>
 
 std::unique_ptr<InstructionSet> InstructionSet::singleInstance{};
 
@@ -14,18 +12,25 @@ MicroSequence& InstructionSet::instruction(
 
     micros.instruction = ins;
 
-    ins.mode.source.size = Size::Unsized;
-    ins.mode.destination.size = Size::Unsized;
+    for (auto& elem : ins.mode.mode) {
+        elem.size = Size::Unsized;
+    }
 
-    std::size_t opcode = this->instructions.size() - 1;
-    instructionReferences[ins] = opcode;
-    micros.opcode = opcode;
+    
+    instructionReferences[ins] = micros.opcode;
+    
 
     return micros.addFetch();
 }
 
+//MicroSequence& InstructionSet::instruction(std::string name, std::vector<SizedAddress> mode) {
+//    return this->instructionWithAddress(name, AddressingMode{mode});
+//}
+
 MicroSequence& InstructionSet::interupt() {
     MicroSequence ins{};
+    std::size_t opcode = this->instructions.size();
+    ins.opcode = opcode;
     this->instructions.push_back(ins);
     return this->instructions.back();
 }
@@ -184,21 +189,22 @@ MicroSequence& InstructionSet::instructionAluUnaryIndirect(
         .add(RID::Temp, RID::Mem);
 }
 
-std::optional<const MicroSequence*> InstructionSet::getInstruction(
+const MicroSequence* InstructionSet::getInstruction(
     const Instruction& ins
 ) const {
     auto opcode = this->getOpcode(ins);
     if (opcode) {
         return &instructions[*opcode];
     }
-    return {};
+    return nullptr;
 }
 
 std::optional<std::size_t> InstructionSet::getOpcode(const Instruction& ins) const {
     Instruction i = ins;
-    i.mode.source.size = Size::Unsized;
-    i.mode.destination.size = Size::Unsized;
 
+    for (auto& elem : i.mode.mode) {
+        elem.size = Size::Unsized;
+    }
 
     if (this->instructionReferences.count(i)) {
         return instructionReferences.at(i);

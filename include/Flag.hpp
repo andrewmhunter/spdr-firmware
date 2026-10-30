@@ -1,8 +1,6 @@
 #ifndef FLAG_HPP
 #define FLAG_HPP
 
-#include <map>
-#include <tuple>
 #include <set>
 #include <iostream>
 #include <cstdint>
@@ -35,7 +33,7 @@ public:
     FlagSet(std::set<Flag> flags, bool noMatchOnEmpty);
     FlagSet(Flag flag);
     explicit FlagSet(bool value);
-    //FlagSet(std::uint16_t value);
+    FlagSet(std::uint16_t value);
 
     FlagSet invert();
     bool match(const FlagSet flags);
